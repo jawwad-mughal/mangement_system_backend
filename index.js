@@ -13,6 +13,7 @@ import categoryRouter from "./routers/categoryRoutes.js";
 import stockRouter from "./routers/stockRoutes.js";
 import productRouter from "./routers/productRoutes.js";
 import bankAccountRoutes from "./routers/bankAccountRoutes.js";
+import transactionRoutes from "./routers/transactionRoutes.js";
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -59,7 +60,11 @@ app.use("/inventory", verifyAccessToken,stockRouter )
 app.use("/products", verifyAccessToken, productRouter);
 
 // bankAccount Routes
-app.use("/api/bankaccount", bankAccountRoutes);
+app.use("/api/bankaccount", bankAccountRoutes); 
+
+
+app.use("/api/transactions", transactionRoutes);
+
 
 app.listen(port, () => {
   console.log(`server connected localhost:${port}`)
