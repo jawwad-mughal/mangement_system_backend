@@ -24,9 +24,10 @@ connectdb()
 
 // Default: allows all origins
 app.use(cors({
-    origin: "https://mangement-system-frontend.vercel.app",
-    credentials: true,
-}))
+  origin: "https://mangement-system-frontend.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true
+}));
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
