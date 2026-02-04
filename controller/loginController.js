@@ -16,59 +16,64 @@ export const loginController = async (req, res) => {
     }
 
     // condition base using database
-      
-      const user = role === "admin" ? await createAdmin.findOne({ email }) : await addEmployees.findOne({email});
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
 
-      const match = role === "admin" ? await bcrypt.compare(password, user.password) : (password === user.password);
-      
-      if (!match) {
-        return res.status(400).json({ message: "Invalid password" });
-      }
+    const user =
+      role === "admin"
+        ? await createAdmin.findOne({ email })
+        : await addEmployees.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-      // Generate accessToken Token
-      const accessToken = await generateAccessToken({
-        id: user._id,
-        role: user.email,
-      });
-      // Generate refreshToken Token
-      const refreshToken = await generateRefreshToken({
-        id: user._id,
-        role: user.email,
-        name: user.name
-      });
+    const match =
+      role === "admin"
+        ? await bcrypt.compare(password, user.password)
+        : password === user.password;
 
-      // Save refresh token in DB
-      user.refreshToken = refreshToken;
-      await user.save();
+    if (!match) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
 
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax", 
-        path: "/",
-        maxAge: 2 * 60 * 1000, 
-      });
+    // Generate accessToken Token
+    const accessToken = await generateAccessToken({
+      id: user._id,
+      role: user.email,
+    });
+    // Generate refreshToken Token
+    const refreshToken = await generateRefreshToken({
+      id: user._id,
+      role: user.email,
+      name: user.name,
+    });
 
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax", 
-        path: "/",
-        maxAge: 7 * 24 * 60 * 60 * 1000, 
-      });
+    // Save refresh token in DB
+    user.refreshToken = refreshToken;
+    await user.save();
 
-      return res.status(200).json({
-        message: "Login successful",
-        user,
-        role,
-        url: "/",
-        accessToken,
-        refreshToken,
-      });
-    
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: true, // 🔥 MUST (HTTPS)
+      sameSite: "none", // 🔥 MUST (cross-domain)
+      path: "/",
+      maxAge: 2 * 60 * 1000,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true, // 🔥 MUST
+      sameSite: "none", // 🔥 MUST
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      message: "Login successful",
+      user,
+      role,
+      url: "/",
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
     console.log(error);
   }
