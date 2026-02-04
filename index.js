@@ -14,6 +14,7 @@ import stockRouter from "./routers/stockRoutes.js";
 import productRouter from "./routers/productRoutes.js";
 import bankAccountRoutes from "./routers/bankAccountRoutes.js";
 import transactionRoutes from "./routers/transactionRoutes.js";
+import accountSummaryRoutes from "./routers/accountSummaryRoutes.js";
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -23,7 +24,7 @@ connectdb()
 
 // Default: allows all origins
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: "https://mangement-system-frontend.vercel.app",
     credentials: true,
 }))
 
@@ -64,6 +65,8 @@ app.use("/api/bankaccount", bankAccountRoutes);
 
 
 app.use("/api/transactions", transactionRoutes);
+
+app.use("/summary",accountSummaryRoutes)
 
 
 app.listen(port, () => {
