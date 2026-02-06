@@ -86,6 +86,8 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/summary",accountSummaryRoutes)
 
 
-app.listen(port, () => {
-  console.log(`server connected localhost:${port}`)
-})
+// app.listen(port, () => {
+//   console.log(`server connected localhost:${port}`)
+// })
+
+export default app;
