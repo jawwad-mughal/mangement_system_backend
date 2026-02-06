@@ -23,11 +23,26 @@ const port = process.env.PORT || 3000
 connectdb()
 
 // Default: allows all origins
+const allowedOrigins = [
+  "https://mangement-system-frontend.vercel.app",
+  "http://localhost:5173"
+];
+
 app.use(cors({
-  origin: "https://mangement-system-frontend.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+// 🔥 VERY IMPORTANT
 app.options("*", cors());
 
 app.use(express.json())
@@ -36,10 +51,10 @@ app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
 
 // middleware check verify token
-app.post("/verifyToken", verifyAccessToken, (req, res) => {
-  // agar token valid ya refresh ho gaya
+app.get("/verifyToken", verifyAccessToken, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
+
 
 // middleware section access
 app.post("/checkSection", verifyAccessToken, sectionAccess );

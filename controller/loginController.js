@@ -54,7 +54,6 @@ export const loginController = async (req, res) => {
       httpOnly: true,
       secure: true, // 🔥 MUST (HTTPS)
       sameSite: "none", // 🔥 MUST (cross-domain)
-      path: "/",
       maxAge: 2 * 60 * 1000,
     });
 
@@ -62,7 +61,6 @@ export const loginController = async (req, res) => {
       httpOnly: true,
       secure: true, // 🔥 MUST
       sameSite: "none", // 🔥 MUST
-      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
