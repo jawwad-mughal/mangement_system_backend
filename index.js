@@ -20,21 +20,51 @@ const app = express()
 const port = process.env.PORT || 3000
 
 // Connting database
-connectdb()
+let isConnected = false;
+
+async function connectDatabase() {
+  if (isConnected) return;
+
+  try {
+    await connectdb();
+    isConnected = true;
+    console.log("MongoDB connected");
+  } catch (err) {
+    console.error("MongoDB connection failed:", err.message);
+  }
+}
+
+connectDatabase();
+
 
 // Default: allows all origins
+
 const allowedOrigins = [
   "https://mangement-system-frontend.vercel.app",
   "http://localhost:5173"
 ];
 
-app.use(cors({
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow server-to-server / vercel internal calls
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
-}));
+};
 
-// 🔥 VERY IMPORTANT
-app.options("*", cors());
+app.use(cors(corsOptions));
+
+// 🔴 THIS LINE IS THE KEY FOR PREFLIGHT
+app.options("*", cors(corsOptions));
+
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
