@@ -39,31 +39,17 @@ connectDatabase();
 
 // Default: allows all origins
 
-const allowedOrigins = [
-  "https://mangement-system-frontend.vercel.app",
-  "http://localhost:5173"
-];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // allow server-to-server / vercel internal calls
-    if (!origin) return callback(null, true);
+app.use(cors({
+  origin: "https://mangement-system-frontend.vercel.app",
+  credentials: true
+}));
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+app.get("/", (req, res) => {
+  res.json({ ok: true });
+});
 
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
 
-app.use(cors(corsOptions));
-
-// 🔴 THIS LINE IS THE KEY FOR PREFLIGHT
-app.options("*", cors(corsOptions));
 
 
 app.use(express.json())
