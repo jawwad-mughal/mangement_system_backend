@@ -11,9 +11,15 @@ const corsOptions = {
   credentials: true,
 };
 
-// ✅ Route-level CORS applied for serverless preflight
+// ✅ Preflight for serverless
+router.options("/signup", cors(corsOptions));
+router.options("/login", cors(corsOptions));
+router.options("/reset-password", cors(corsOptions));
+
+// ✅ Routes with CORS
 router.post("/signup", cors(corsOptions), signupAdminController);
 router.post("/login", cors(corsOptions), loginController);
 router.post("/reset-password", cors(corsOptions), resetPasswordController);
 
 export default router;
+
