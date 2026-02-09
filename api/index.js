@@ -1,7 +1,7 @@
 import express from "express";
 import connectdb from "../databaseConfig/db.js";
 import cookieParser from "cookie-parser";
-
+import dotenv from "dotenv"
 // Middlewares
 import { verifyAccessToken } from "../middleware/verifyAccessToken.js";
 import { sectionAccess } from "../middleware/accessMiddleware.js";
@@ -21,7 +21,8 @@ import accountSummaryRoutes from "../routers/accountSummaryRoutes.js";
 import cors from "cors";
 
 const app = express();
-
+dotenv.config();
+const PORT = process.env.PORT || 4000
 // ------------------------
 // MongoDB connection
 // ------------------------
@@ -52,7 +53,7 @@ app.use(cookieParser());
 // CORS options
 // ------------------------
 const corsOptions = {
-  origin: "https://mangement-system-frontend.vercel.app",
+  origin: "http://localhost:5173",
   credentials: true, // cookies allow
 };
 
@@ -92,6 +93,8 @@ app.use("/summary", cors(corsOptions), accountSummaryRoutes);
 // ------------------------
 // Export for Vercel
 // ------------------------
-export default app;
+app.listen(PORT, (req, res) => {
+  console.log("Server is connected")
+})
 
 
