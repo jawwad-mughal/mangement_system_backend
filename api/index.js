@@ -46,49 +46,46 @@ connectDatabase();
 // Global middleware
 // ------------------------
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ------------------------
 // CORS options
 // ------------------------
-const corsOptions = {
-  origin: "http://localhost:5173",
-  credentials: true, // cookies allow
-};
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 
 // ------------------------
 // Test route
 // ------------------------
-app.get("/", cors(corsOptions), (req, res) => {
+app.get("/", (req, res) => {
   res.json({ ok: true });
 });
 
 // ------------------------
 // Token & Section middleware
 // ------------------------
-app.get("/verifyToken", cors(corsOptions), verifyAccessToken, (req, res) => {
+app.get("/verifyToken", verifyAccessToken, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
 
-app.post("/checkSection", cors(corsOptions), verifyAccessToken, sectionAccess);
-
+app.post("/checkSection", verifyAccessToken, sectionAccess);
+app.get("/", (req, res) => res.json({ message: "Server running" }));
 // ------------------------
 // Routers with route-level CORS (Vercel-safe)
 // ------------------------
-app.use("/api", cors(corsOptions), loginSignUpRouter); // login/signup routes
-app.use("/logout", cors(corsOptions), logoutRouter);
+app.use("/api", loginSignUpRouter); // login/signup routes
+app.use("/logout", logoutRouter);
 
-app.use("/employee", cors(corsOptions), verifyAccessToken, employeeRouter);
-app.use("/branch", cors(corsOptions), verifyAccessToken, branchRouter);
-app.use("/category", cors(corsOptions), verifyAccessToken, categoryRouter);
-app.use("/inventory", cors(corsOptions), verifyAccessToken, stockRouter);
-app.use("/products", cors(corsOptions), verifyAccessToken, productRouter);
+app.use("/employee", verifyAccessToken, employeeRouter);
+app.use("/branch", verifyAccessToken, branchRouter);
+app.use("/category", verifyAccessToken, categoryRouter);
+app.use("/inventory", verifyAccessToken, stockRouter);
+app.use("/products", verifyAccessToken, productRouter);
 
-app.use("/api/bankaccount", cors(corsOptions), bankAccountRoutes);
-app.use("/api/transactions", cors(corsOptions), transactionRoutes);
+app.use("/api/bankaccount", bankAccountRoutes);
+app.use("/api/transactions", transactionRoutes);
 
-app.use("/summary", cors(corsOptions), accountSummaryRoutes);
+app.use("/summary", accountSummaryRoutes);
 
 // ------------------------
 // Export for Vercel
