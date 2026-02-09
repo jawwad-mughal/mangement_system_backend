@@ -93,7 +93,7 @@ app.use("/summary", cors(corsOptions), accountSummaryRoutes);
 // ------------------------
 // Export for Vercel
 // ------------------------
-app.listen(PORT, (req, res) => {
+app.listen(PORT, () => {
   console.log("Server is connected")
 })
 
