@@ -1,6 +1,5 @@
 import express from "express";
-import connectdb from "../databaseConfig/db.js"; // ✅ correct path
-import cors from "cors";
+import connectdb from "../databaseConfig/db.js";
 import cookieParser from "cookie-parser";
 
 // Middlewares
@@ -19,87 +18,80 @@ import bankAccountRoutes from "../routers/bankAccountRoutes.js";
 import transactionRoutes from "../routers/transactionRoutes.js";
 import accountSummaryRoutes from "../routers/accountSummaryRoutes.js";
 
+import cors from "cors";
+
 const app = express();
 
 // ------------------------
-// ✅ MongoDB Connection
+// MongoDB connection
 // ------------------------
 let isConnected = false;
 
 async function connectDatabase() {
   if (isConnected) return;
-
   try {
     await connectdb();
     isConnected = true;
     console.log("MongoDB connected");
   } catch (err) {
     console.error("MongoDB connection failed:", err.message);
-    throw err; // important for Vercel
+    throw err;
   }
 }
 
 connectDatabase();
 
 // ------------------------
-// ✅ CORS Config
-// ------------------------
-import cors from "cors";
-
-const corsOptions = {
-  origin: "https://mangement-system-frontend.vercel.app", // exact frontend URL
-  credentials: true, // cookies allow
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // preflight
-
-
-// ------------------------
-// ✅ Middleware
+// Global middleware
 // ------------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ❌ Vercel serverless cannot serve local folders reliably
-// app.use("/uploads", express.static("uploads"));
+// ------------------------
+// CORS options
+// ------------------------
+const corsOptions = {
+  origin: "https://mangement-system-frontend.vercel.app",
+  credentials: true, // cookies allow
+};
 
 // ------------------------
-// ✅ Test Route
+// Test route
 // ------------------------
-app.get("/", (req, res) => {
+app.get("/", cors(corsOptions), (req, res) => {
   res.json({ ok: true });
 });
 
 // ------------------------
-// ✅ Token & Section Middleware
+// Token & Section middleware
 // ------------------------
-app.get("/verifyToken", verifyAccessToken, (req, res) => {
+app.get("/verifyToken", cors(corsOptions), verifyAccessToken, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
 
-app.post("/checkSection", verifyAccessToken, sectionAccess);
+app.post("/checkSection", cors(corsOptions), verifyAccessToken, sectionAccess);
 
 // ------------------------
-// ✅ Routers
+// Routers with route-level CORS (Vercel-safe)
 // ------------------------
-app.use("/api", loginSignUpRouter);
-app.use("/logout", logoutRouter);
+app.use("/api", cors(corsOptions), loginSignUpRouter); // login/signup routes
+app.use("/logout", cors(corsOptions), logoutRouter);
 
-app.use("/employee", verifyAccessToken, employeeRouter);
-app.use("/branch", verifyAccessToken, branchRouter);
-app.use("/category", verifyAccessToken, categoryRouter);
-app.use("/inventory", verifyAccessToken, stockRouter);
-app.use("/products", verifyAccessToken, productRouter);
+app.use("/employee", cors(corsOptions), verifyAccessToken, employeeRouter);
+app.use("/branch", cors(corsOptions), verifyAccessToken, branchRouter);
+app.use("/category", cors(corsOptions), verifyAccessToken, categoryRouter);
+app.use("/inventory", cors(corsOptions), verifyAccessToken, stockRouter);
+app.use("/products", cors(corsOptions), verifyAccessToken, productRouter);
 
-app.use("/api/bankaccount", bankAccountRoutes);
-app.use("/api/transactions", transactionRoutes);
+app.use("/api/bankaccount", cors(corsOptions), bankAccountRoutes);
+app.use("/api/transactions", cors(corsOptions), transactionRoutes);
 
-app.use("/summary", accountSummaryRoutes);
+app.use("/summary", cors(corsOptions), accountSummaryRoutes);
 
 // ------------------------
-// ✅ Export for Vercel
+// Export for Vercel
 // ------------------------
 export default app;
+
 
