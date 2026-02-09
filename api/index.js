@@ -44,16 +44,15 @@ connectDatabase();
 // ------------------------
 // ✅ CORS Config
 // ------------------------
-app.use(cors({
-  origin: [
-    "https://mangement-system-frontend.vercel.app",
-    "http://localhost:5173"
-  ],
-  credentials: true
-}));
+import cors from "cors";
 
-app.options("*", cors());
+const corsOptions = {
+  origin: "https://mangement-system-frontend.vercel.app", // exact frontend URL
+  credentials: true, // cookies allow
+};
 
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // preflight
 
 
 // ------------------------
