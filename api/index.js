@@ -49,22 +49,28 @@ const allowedOrigins = [
   "http://localhost:5173"
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow server-to-server calls
+    // Allow server-to-server & Postman
+    if (!origin) return callback(null, true);
+
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+      return callback(null, true);
     }
+
+    // Reject silently (important for Vercel)
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
-}));
+};
 
-// Preflight requests
-app.options("*", cors());
+app.use(cors(corsOptions));
+
+// ✅ Preflight must use SAME options
+app.options("*", cors(corsOptions));
+
 
 // ------------------------
 // ✅ Middleware
