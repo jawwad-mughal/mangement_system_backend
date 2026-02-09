@@ -44,32 +44,16 @@ connectDatabase();
 // ------------------------
 // ✅ CORS Config
 // ------------------------
-const allowedOrigins = [
-  "https://mangement-system-frontend.vercel.app",
-  "http://localhost:5173"
-];
+app.use(cors({
+  origin: [
+    "https://mangement-system-frontend.vercel.app",
+    "http://localhost:5173"
+  ],
+  credentials: true
+}));
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow server-to-server & Postman
-    if (!origin) return callback(null, true);
+app.options("*", cors());
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Reject silently (important for Vercel)
-    return callback(null, false);
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
-
-app.use(cors(corsOptions));
-
-// ✅ Preflight must use SAME options
-app.options("*", cors(corsOptions));
 
 
 // ------------------------
