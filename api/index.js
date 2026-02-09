@@ -90,8 +90,6 @@ app.use("/summary", accountSummaryRoutes);
 // ------------------------
 // Export for Vercel
 // ------------------------
-app.listen(PORT, () => {
-  console.log("Server is connected")
-})
+export default app;
 
 
