@@ -1,28 +1,17 @@
-import fs from "fs/promises";
-import path from "path";
 import { addBranch } from "../model/branchSchema.js";
+import cloudinary from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
-// create new branch in databse
+
+// ---------------- CREATE BRANCH ----------------
 export const createBranch = async (req, res) => {
   try {
-    const accessToken = req.cookies.refreshToken || req.headers["authorization"]?.split(" ")[1];
-      
-      if (!accessToken) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+    const accessToken =
+      req.cookies.refreshToken || req.headers["authorization"]?.split(" ")[1];
+    if (!accessToken) return res.status(401).json({ message: "Unauthorized" });
 
-    const decoded = jwt.verify(
-            accessToken,
-            process.env.JWT_REFRESH_SECRET
-          );
-
-    let adminId
-
-    if(decoded?.name === "admin") {
-          adminId = decoded.id
-    }
-
-    if(!adminId)  return res.status(401).json({ message: "Create Branch Only Admin" });
+    const decoded = jwt.verify(accessToken, process.env.JWT_REFRESH_SECRET);
+    if (decoded?.name !== "admin")
+      return res.status(401).json({ message: "Create Branch Only Admin" });
 
     const {
       branchName,
@@ -35,32 +24,23 @@ export const createBranch = async (req, res) => {
       branchCode,
     } = req.body;
 
-    if (
-      !branchName ||
-      !managerName ||
-      !phone ||
-      !email ||
-      !address ||
-      !active ||
-      !city ||
-      !branchCode
-    ) {
+    if (!branchName || !managerName || !phone || !email || !address || !active || !city || !branchCode)
       return res.status(400).json({ message: "All Fields are Required" });
-    }
 
     const existingBranch = await addBranch.findOne({ branchCode });
-    // console.log(existingBranch)
-      if (existingBranch) {
-        return res.status(409).json({ message: "Branch already exists" });
-      }
+    if (existingBranch)
+      return res.status(409).json({ message: "Branch already exists" });
 
-    // Multer file
-    const branchImage = req.file ? req.file.filename : null;
-      if (!branchImage) return res.status(400).json({ messge: "Image requried " });
+    // Upload image to Cloudinary
+    if (!req.file) return res.status(400).json({ message: "Image required" });
 
+    const uploadedImage = await cloudinary.uploader.upload(
+      `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+      { folder: "branches" }
+    );
 
     const branch = await addBranch.create({
-      branchImage,
+      branchImage: uploadedImage.secure_url,
       branchName,
       branchCode,
       managerName,
@@ -69,125 +49,93 @@ export const createBranch = async (req, res) => {
       city,
       address,
       active,
-      adminRef: adminId 
+      adminRef: decoded.id,
+      cloudinary_id: uploadedImage.public_id, // store for future delete
     });
 
-    return res
-      .status(200)
-      .json({ branch, message: "Branch Successfully Created" });
+    res.status(200).json({ branch, message: "Branch Successfully Created" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// get all branch in pagination
+// ---------------- GET ALL BRANCH ----------------
 export const fetchBranch = async (req, res) => {
   try {
-     const accessToken = req.cookies.refreshToken || req.headers["authorization"]?.split(" ")[1];
-      
-      if (!accessToken) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+    const accessToken =
+      req.cookies.refreshToken || req.headers["authorization"]?.split(" ")[1];
+    if (!accessToken) return res.status(401).json({ message: "Unauthorized" });
 
-    const decoded = jwt.verify(
-            accessToken,
-            process.env.JWT_REFRESH_SECRET
-          );
+    const decoded = jwt.verify(accessToken, process.env.JWT_REFRESH_SECRET);
+    if (decoded?.name !== "admin")
+      return res.status(401).json({ message: "Admin only" });
 
-    let adminId
-
-    if(decoded?.name === "admin") {
-          adminId = decoded.id
-    }
-    
-
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 20;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const getAllBranch = await addBranch
-      .find({adminRef: adminId })
+    const branches = await addBranch
+      .find({ adminRef: decoded.id })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const totalDoc = await addBranch.countDocuments();
+    const totalDoc = await addBranch.countDocuments({ adminRef: decoded.id });
 
-    res.status(201).json({
+    res.status(200).json({
       totalPages: Math.ceil(totalDoc / limit),
       hasMore: page * limit < totalDoc,
-      getAllBranch,
+      branches,
     });
   } catch (error) {
-    res.status(500).json({ message: error });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// get single data
-
+// ---------------- GET SINGLE BRANCH ----------------
 export const getSingle = async (req, res) => {
   try {
-
-    const {id} = req.params;
+    const { id } = req.params;
     const branch = await addBranch.findById(id);
-    if(!branch) return res.status(404).json({message: "Branch not found"});
+    if (!branch) return res.status(404).json({ message: "Branch not found" });
 
-    res.status(201).json(branch)
+    res.status(200).json(branch);
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
-}
+};
 
-// UPDATE BRANCH
+// ---------------- UPDATE BRANCH ----------------
 export const updateBranch = async (req, res) => {
   try {
-    // ---------------- AUTH ----------------
-    const accessToken = req.cookies.refreshToken || req.headers["authorization"]?.split(" ")[1];
+    const accessToken =
+      req.cookies.refreshToken || req.headers["authorization"]?.split(" ")[1];
     if (!accessToken) return res.status(401).json({ message: "Unauthorized" });
 
     const decoded = jwt.verify(accessToken, process.env.JWT_REFRESH_SECRET);
     if (decoded?.name !== "admin")
       return res.status(401).json({ message: "Update Branch Only Admin" });
 
-    const adminId = decoded.id;
-
-    // ---------------- VALIDATION ----------------
-    const {
-      branchId,
-      branchName,
-      managerName,
-      phone,
-      city,
-      email,
-      address,
-      active,
-      branchCode,
-    } = req.body;
-
+    const { branchId, branchName, managerName, phone, city, email, address, active, branchCode } = req.body;
     if (!branchId) return res.status(400).json({ message: "Branch ID required" });
 
     const branch = await addBranch.findById(branchId);
     if (!branch) return res.status(404).json({ message: "Branch not found" });
 
-    // ---------------- IMAGE HANDLING ----------------
-    let branchImage = branch.branchImage;
-
+    // If new image, delete old from Cloudinary
     if (req.file) {
-      const oldPath = path.join("uploads", branch.branchImage);
-
-      // Safely delete old image if exists
-      try {
-        await fs.access(oldPath); // Check if file exists
-        await fs.unlink(oldPath); // Delete file
-        console.log("Old branch image deleted:", oldPath);
-      } catch (err) {
-        console.warn("Old image not found or already deleted:", oldPath);
+      if (branch.cloudinary_id) {
+        await cloudinary.uploader.destroy(branch.cloudinary_id);
       }
 
-      branchImage = req.file.filename; // Use new uploaded file
+      const uploadedImage = await cloudinary.uploader.upload(
+        `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+        { folder: "branches" }
+      );
+      branch.branchImage = uploadedImage.secure_url;
+      branch.cloudinary_id = uploadedImage.public_id;
     }
 
-    // ---------------- UPDATE FIELDS ----------------
     branch.branchName = branchName || branch.branchName;
     branch.branchCode = branchCode || branch.branchCode;
     branch.managerName = managerName || branch.managerName;
@@ -195,70 +143,29 @@ export const updateBranch = async (req, res) => {
     branch.email = email || branch.email;
     branch.city = city || branch.city;
     branch.address = address || branch.address;
-    branch.active = active ?? branch.active; // 0 or false should be respected
-    branch.branchImage = branchImage;
-    branch.adminRef = adminId;
+    branch.active = active ?? branch.active;
 
     const updatedBranch = await branch.save();
-
-    res.status(200).json({
-      message: "Branch updated successfully",
-      updatedBranch,
-    });
+    res.status(200).json({ message: "Branch updated successfully", updatedBranch });
   } catch (error) {
-    console.error("UPDATE BRANCH ERROR:", error);
-    res.status(500).json({ message: "Server Error", error });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// =========================
-//   DELETE BRANCH 
-// =========================
+// ---------------- DELETE BRANCH ----------------
 export const deleteBranch = async (req, res) => {
   try {
     const { id } = req.params;
-
     const branch = await addBranch.findById(id);
-    if (!branch) {
-      return res.status(404).json({ message: "Branch not found" });
+    if (!branch) return res.status(404).json({ message: "Branch not found" });
+
+    if (branch.cloudinary_id) {
+      await cloudinary.uploader.destroy(branch.cloudinary_id);
     }
 
-    // -------------------------------
-    // Delete image if exists
-    // -------------------------------
-    if (branch.branchImage) {
-      const oldPath = path.join("uploads", branch.branchImage);
-
-      try {
-        await fs.access(oldPath); // Check if file exists
-        await fs.unlink(oldPath); // Delete file
-        console.log("Branch image deleted:", oldPath);
-      } catch (err) {
-        console.log("Branch image delete error (file may not exist):", err);
-      }
-    }
-
-    // -------------------------------
-    // Delete branch document
-    // -------------------------------
     await addBranch.findByIdAndDelete(id);
-
-    res.status(200).json({
-      message: "Branch deleted successfully",
-    });
+    res.status(200).json({ message: "Branch deleted successfully" });
   } catch (error) {
-    console.error("Delete branch error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: error.message });
   }
 };
-
-export const getAllBranch = async (req, res) => {
-  try {
-    const branch = await addBranch.find()
-
-    res.status(201).json(branch)
-    
-  } catch (error) {
-       res.status(500).json({message: error.message || "Server error"});
-  }
-}

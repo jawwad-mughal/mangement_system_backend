@@ -1,23 +1,23 @@
 import express from "express";
-import connectdb from "../databaseConfig/db.js";
+import connectdb from "./databaseConfig/db.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
 // Middlewares
-import { verifyAccessToken } from "../middleware/verifyAccessToken.js";
-import { sectionAccess } from "../middleware/accessMiddleware.js";
+import { verifyAccessToken } from "./middleware/verifyAccessToken.js";
+import { sectionAccess } from "./middleware/accessMiddleware.js";
 
 // Routers
-import loginSignUpRouter from "../routers/loginSignUpRoutes.js";
-import logoutRouter from "../routers/logoutRoutes.js";
-import employeeRouter from "../routers/employeeRoutes.js";
-import branchRouter from "../routers/branchRoutes.js";
-import categoryRouter from "../routers/categoryRoutes.js";
-import stockRouter from "../routers/stockRoutes.js";
-import productRouter from "../routers/productRoutes.js";
-import bankAccountRoutes from "../routers/bankAccountRoutes.js";
-import transactionRoutes from "../routers/transactionRoutes.js";
-import accountSummaryRoutes from "../routers/accountSummaryRoutes.js";
+import loginSignUpRouter from "./routers/loginSignUpRoutes.js";
+import logoutRouter from "./routers/logoutRoutes.js";
+import employeeRouter from "./routers/employeeRoutes.js";
+import branchRouter from "./routers/branchRoutes.js";
+import categoryRouter from "./routers/categoryRoutes.js";
+import stockRouter from "./routers/stockRoutes.js";
+import productRouter from "./routers/productRoutes.js";
+import bankAccountRoutes from "./routers/bankAccountRoutes.js";
+import transactionRoutes from "./routers/transactionRoutes.js";
+import accountSummaryRoutes from "./routers/accountSummaryRoutes.js";
 
 const app = express();
 

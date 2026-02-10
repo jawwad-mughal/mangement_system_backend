@@ -1,35 +1,36 @@
 import bcrypt from "bcryptjs";
 import { addEmployees } from "../model/addEmployeeSchema.js";
-import fs from "fs/promises";
-import path from "path";
 import { addBranch } from "../model/branchSchema.js";
+import cloudinary from "../services/cloudinaryConfig.js";
+import streamifier from "streamifier";
+
+// ------------------ Helper: Upload to Cloudinary ------------------
+const uploadToCloudinary = (fileBuffer, folder = "employees") => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream({ folder }, (error, result) => {
+      if (result) resolve(result);
+      else reject(error);
+    });
+    streamifier.createReadStream(fileBuffer).pipe(stream);
+  });
+};
 
 // ===============================
-// ✅ Create Employee
+// ✅ CREATE EMPLOYEE
 // ===============================
-
 export const createEmployee = async (req, res) => {
-  
   try {
-    const {
-      employeeName,
-      email,
-      password,
-      position,
-      phone,
-      salary,
-      branchCode,
-      access,
-    } = req.body;
+    const { employeeName, email, password, position, phone, salary, branchCode, access } = req.body;
 
     const exists = await addEmployees.findOne({ email });
-    if (exists)
-      return res.status(400).json({ message: "Email already exists" });
+    if (exists) return res.status(400).json({ message: "Email already exists" });
 
     const branchId = await addBranch.findOne({ branchCode });
-    
-    const imagePath = req.file ? req.file.filename : null;
-    if (!imagePath) return res.status(400).json({ messge: "Image requried " });
+
+    if (!req.file) return res.status(400).json({ message: "Image required" });
+
+    // Upload image to Cloudinary
+    const result = await uploadToCloudinary(req.file.buffer, "employees");
 
     const employee = await addEmployees.create({
       employeeName,
@@ -40,8 +41,9 @@ export const createEmployee = async (req, res) => {
       salary,
       branchName: branchId ? branchId.branchName : "adminbranch",
       branchrefernce: branchId ? branchId._id : null,
-      access: JSON.parse(access), // because frontend sends JSON string
-      image: imagePath,
+      access: JSON.parse(access), // frontend sends JSON string
+      image: result.secure_url,
+      image_public_id: result.public_id,
     });
 
     res.status(201).json({
@@ -50,20 +52,20 @@ export const createEmployee = async (req, res) => {
       employee,
     });
   } catch (error) {
+    console.error("CREATE EMPLOYEE ERROR:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 // ===============================
-// ✅ Get All Employees
+// ✅ GET ALL EMPLOYEES (with pagination)
 // ===============================
 export const getAllEmployees = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; // Current page
-    const limit = parseInt(req.query.limit) || 20; // Items per page
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    // Get paginated employees
     const employees = await addEmployees
       .find()
       .sort({ createdAt: -1 })
@@ -82,42 +84,35 @@ export const getAllEmployees = async (req, res) => {
       employees,
     });
   } catch (error) {
+    console.error("GET EMPLOYEES ERROR:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// get single add
+// ===============================
+// ✅ GET SINGLE EMPLOYEE
+// ===============================
 export const getSingleData = async (req, res) => {
   try {
     const { id } = req.params;
 
     const employee = await addEmployees.findById(id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
 
-    if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
-
-    return res.status(200).json(employee);
+    res.status(200).json(employee);
   } catch (error) {
-    console.error("Error fetching employee:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("GET SINGLE EMPLOYEE ERROR:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-// ✅ Update Employee
+// ===============================
+// ✅ UPDATE EMPLOYEE
+// ===============================
 export const updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      employeeName,
-      email,
-      position,
-      phone,
-      salary,
-      branchCode,
-      access,
-      password,
-    } = req.body;
+    const { employeeName, email, position, phone, salary, branchCode, access, password } = req.body;
 
     const employee = await addEmployees.findById(id);
     if (!employee) return res.status(404).json({ message: "Employee not found" });
@@ -126,25 +121,8 @@ export const updateEmployee = async (req, res) => {
     let branch = await addBranch.findOne({ branchCode });
     if (!branch) branch = { branchName: "adminbranch", _id: null };
 
-    // Delete old image if new uploaded
-    if (req.file && employee.image) {
-      const oldPath = path.join("uploads", employee.image);
-      try { 
-        await fs.unlink(oldPath); 
-      } catch {
-
-      }
-    }
-
-    // Safe access parsing
-    let parsedAccess = employee.access;
-    if (access) {
-      try { parsedAccess = typeof access === "string" ? JSON.parse(access) : access; }
-      catch { parsedAccess = employee.access; }
-    }
-
-    // Prepare updated data
-    const updatedData = {
+    // Handle new image upload
+    let updatedData = {
       employeeName,
       email,
       position,
@@ -152,49 +130,63 @@ export const updateEmployee = async (req, res) => {
       salary,
       branchName: branch.branchName,
       branchrefernce: branch._id,
-      access: parsedAccess,
     };
 
-    if (password) updatedData.password = password;
-    if (req.file) updatedData.image = req.file.filename;
-
-    const updatedEmployee = await addEmployees.findByIdAndUpdate(
-      id,
-      updatedData,
-      { new: true }
-    );
-
-    return res.status(200).json({ success: "Branch updated successfully", employee: updatedEmployee });
-  } catch (err) {
-    console.error("Update Employee Error:", err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-
-// ✅ Delete Employee
-export const deleteEmployee = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const employee = await addEmployees.findById(id);
-    if (!employee)
-      return res.status(404).json({ message: "Employee not found" });
-
-    // DELETE IMAGE IF EXISTS
-    if (employee.image) {
-      const filePath = path.join("uploads", employee.image);
+    // Update access safely
+    if (access) {
       try {
-        await fs.unlink(filePath);
-        
-      } catch (err) {
-        // ignore if file doesn't exist
+        updatedData.access = typeof access === "string" ? JSON.parse(access) : access;
+      } catch {
+        updatedData.access = employee.access;
       }
+    } else {
+      updatedData.access = employee.access;
     }
 
-    await addEmployees.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: "Employee deleted" });
+    // Update password if provided
+    if (password) updatedData.password = password;
+
+    // If new image is uploaded
+    if (req.file) {
+      // Delete old image from Cloudinary
+      if (employee.image_public_id) {
+        await cloudinary.uploader.destroy(employee.image_public_id);
+      }
+
+      const result = await uploadToCloudinary(req.file.buffer, "employees");
+      updatedData.image = result.secure_url;
+      updatedData.image_public_id = result.public_id;
+    }
+
+    const updatedEmployee = await addEmployees.findByIdAndUpdate(id, updatedData, { new: true });
+
+    res.status(200).json({ success: true, message: "Employee updated successfully", employee: updatedEmployee });
   } catch (err) {
-    console.error(err);
+    console.error("UPDATE EMPLOYEE ERROR:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+// ===============================
+// ✅ DELETE EMPLOYEE
+// ===============================
+export const deleteEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const employee = await addEmployees.findById(id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+    // Delete image from Cloudinary
+    if (employee.image_public_id) {
+      await cloudinary.uploader.destroy(employee.image_public_id);
+    }
+
+    await addEmployees.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: "Employee deleted successfully" });
+  } catch (err) {
+    console.error("DELETE EMPLOYEE ERROR:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
