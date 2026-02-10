@@ -1,5 +1,5 @@
 import { addBranch } from "../model/branchSchema.js";
-import cloudinary from "../utils/cloudinary.js";
+import cloudinary from "../services/cloudinaryConfig.js";
 import jwt from "jsonwebtoken";
 
 // ---------------- CREATE BRANCH ----------------

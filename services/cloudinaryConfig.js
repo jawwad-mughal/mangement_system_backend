@@ -1,9 +1,13 @@
-import cloudinary from "cloudinary";
+// utils/cloudinary.js
+import { v2 as cloudinary } from "cloudinary";
+import dotenv from "dotenv";
 
-cloudinary.v2.config({
+dotenv.config(); // Only needed if you use local .env for dev
+
+cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export default cloudinary.v2;
+export default cloudinary;
