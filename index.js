@@ -25,7 +25,6 @@ const app = express();
 // MongoDB connection (serverless-safe)
 // ------------------------
 let isConnected = false;
-
 async function connectDatabase() {
   if (isConnected) return;
   try {
@@ -47,15 +46,31 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ------------------------
-// CORS (PRODUCTION URL ONLY)
+// CORS (Vercel-safe)
 // ------------------------
-app.use(
-  cors({
-    origin: "https://mangement-system-frontend.vercel.app",
-    credentials: true,
-  })
-);
-app.options("*", cors());
+const allowedOrigins = [
+  "https://mangement-system-frontend.vercel.app",
+  "http://localhost:5173", // local dev
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") return res.sendStatus(200); // respond to preflight
+  next();
+});
 
 // ------------------------
 // Test route
@@ -93,6 +108,7 @@ app.use("/summary", accountSummaryRoutes);
 // Export for Vercel
 // ------------------------
 export default app;
+
 
 
 
