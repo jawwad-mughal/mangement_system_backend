@@ -1,7 +1,8 @@
 import express from "express";
 import connectdb from "../databaseConfig/db.js";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv"
+import cors from "cors";
+
 // Middlewares
 import { verifyAccessToken } from "../middleware/verifyAccessToken.js";
 import { sectionAccess } from "../middleware/accessMiddleware.js";
@@ -18,13 +19,10 @@ import bankAccountRoutes from "../routers/bankAccountRoutes.js";
 import transactionRoutes from "../routers/transactionRoutes.js";
 import accountSummaryRoutes from "../routers/accountSummaryRoutes.js";
 
-import cors from "cors";
-
 const app = express();
-dotenv.config();
-const PORT = process.env.PORT || 4000
+
 // ------------------------
-// MongoDB connection
+// MongoDB connection (serverless-safe)
 // ------------------------
 let isConnected = false;
 
@@ -39,26 +37,31 @@ async function connectDatabase() {
     throw err;
   }
 }
-
 connectDatabase();
 
 // ------------------------
 // Global middleware
 // ------------------------
 app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ------------------------
-// CORS options
+// CORS (PRODUCTION URL ONLY)
 // ------------------------
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(
+  cors({
+    origin: "https://mangement-system-frontend.vercel.app",
+    credentials: true,
+  })
+);
+app.options("*", cors());
 
 // ------------------------
 // Test route
 // ------------------------
 app.get("/", (req, res) => {
-  res.json({ ok: true });
+  res.json({ message: "Server running" });
 });
 
 // ------------------------
@@ -69,11 +72,11 @@ app.get("/verifyToken", verifyAccessToken, (req, res) => {
 });
 
 app.post("/checkSection", verifyAccessToken, sectionAccess);
-app.get("/", (req, res) => res.json({ message: "Server running" }));
+
 // ------------------------
-// Routers with route-level CORS (Vercel-safe)
+// Routers
 // ------------------------
-app.use("/api", loginSignUpRouter); // login/signup routes
+app.use("/api", loginSignUpRouter);
 app.use("/logout", logoutRouter);
 
 app.use("/employee", verifyAccessToken, employeeRouter);
@@ -84,12 +87,12 @@ app.use("/products", verifyAccessToken, productRouter);
 
 app.use("/api/bankaccount", bankAccountRoutes);
 app.use("/api/transactions", transactionRoutes);
-
 app.use("/summary", accountSummaryRoutes);
 
 // ------------------------
 // Export for Vercel
 // ------------------------
 export default app;
+
 
 
