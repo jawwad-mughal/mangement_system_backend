@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 
+
 const connectdb = async () => {
-  const uri = process.env.MONGO_URI; // ✅ FIXED NAME
+  const uri = process.env.MONGO_URL; // ✅ FIXED NAME
 
   if (!uri) {
     throw new Error("MONGO_URI is missing in environment variables");

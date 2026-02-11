@@ -1,5 +1,5 @@
 import express from "express";
-import { createProduct, deleteProduct, editProduct, getAllProducts, getSingleProduct } from "../controller/productController.js";
+import { createProduct, deleteProduct, editProduct, getAllProducts } from "../controller/productController.js";
 import { upload } from "../middleware/multerMiddleware.js";
 import { verifyAccessToken } from "../middleware/verifyAccessToken.js"; // JWT middleware
 
@@ -11,8 +11,6 @@ router.post("/", verifyAccessToken, upload.array("images", 5), createProduct);
 // ✅ Get all products
 router.get("/", verifyAccessToken, getAllProducts);
 
-// ✅ Get single product
-router.get("/:id", verifyAccessToken, getSingleProduct); // new route for single product
 
 // ✅ Update product
 router.put("/:id", verifyAccessToken, upload.array("images", 10), editProduct);

@@ -1,4 +1,4 @@
-import addBranch from "../model/branchSchema.js";
+import addBranch from "../model/BankAccountSchema.js";
 import cloudinary from "../services/cloudinaryConfig.js";
 import jwt from "jsonwebtoken";
 

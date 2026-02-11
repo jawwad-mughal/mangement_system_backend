@@ -19,23 +19,26 @@ import bankAccountRoutes from "./routers/bankAccountRoutes.js";
 import transactionRoutes from "./routers/transactionRoutes.js";
 import accountSummaryRoutes from "./routers/accountSummaryRoutes.js";
 
+import dotenv from "dotenv";
+dotenv.config(); // MUST first
+
 const app = express();
 
 // ------------------------
-// MongoDB connection (serverless-safe)
+// MongoDB connection (Serverless-safe)
 // ------------------------
 let isConnected = false;
-async function connectDatabase() {
+const connectDatabase = async () => {
   if (isConnected) return;
   try {
     await connectdb();
     isConnected = true;
-    console.log("MongoDB connected");
+    console.log("MongoDB connected ✅");
   } catch (err) {
     console.error("MongoDB connection failed:", err.message);
     throw err;
   }
-}
+};
 connectDatabase();
 
 // ------------------------
@@ -50,7 +53,7 @@ app.use(cookieParser());
 // ------------------------
 const allowedOrigins = [
   "https://mangement-system-frontend.vercel.app",
-  "http://localhost:5173", // local dev
+  "http://localhost:5173",
 ];
 
 app.use((req, res, next) => {
@@ -76,7 +79,7 @@ app.use((req, res, next) => {
 // Test route
 // ------------------------
 app.get("/", (req, res) => {
-  res.json({ message: "Server running" });
+  res.json({ message: "Server running ✅" });
 });
 
 // ------------------------
@@ -105,9 +108,13 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/summary", accountSummaryRoutes);
 
 // ------------------------
-// Export for Vercel
+// Server start (local dev)
 // ------------------------
-export default app;
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} ✅`);
+});
+
 
 
 
