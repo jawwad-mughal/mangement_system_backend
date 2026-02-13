@@ -66,13 +66,19 @@ export const getAllEmployees = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
+    // SaaS / Branch filter
+    const filter = {};
+    if (req.user?.branchrefernce) {
+      filter.branchrefernce = req.user.branchrefernce;
+    }
+
     const employees = await addEmployees
-      .find()
+      .find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await addEmployees.countDocuments();
+    const total = await addEmployees.countDocuments(filter);
 
     res.status(200).json({
       success: true,
