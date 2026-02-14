@@ -16,7 +16,7 @@ router.post("/createbranch", upload.single("branchImage"), createBranch);
 // ---------------- GET BRANCHES WITH PAGINATION ----------------
 
 // ---------------- GET ALL BRANCHES (no pagination) ----------------
-router.get("/getallbranch", getAllBranch);
+router.get("/branch/get", getAllBranch);
 
 // ---------------- GET SINGLE BRANCH ----------------
 router.get("/getsinglebranch/:id", getSingleBranch);
