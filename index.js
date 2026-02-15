@@ -89,7 +89,7 @@ app.get("/verifyToken", verifyAccessToken, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
 
-app.post("/checkSection", verifyAccessToken, sectionAccess);
+// app.post("/checkSection", verifyAccessToken, sectionAccess);
 
 // ------------------------
 // Routers

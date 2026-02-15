@@ -14,8 +14,18 @@ export const logoutController = async (req, res) => {
     );
 
     // 2️⃣ Cookies clear karo
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken", {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+});
+res.clearCookie("refreshToken", {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+});
 
     res.json({ success: true, message: "Logged out successfully" });
   } catch (error) {
